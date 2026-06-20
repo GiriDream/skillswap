@@ -70,8 +70,6 @@ exports.startSwap = async (req, res) => {
     const activeHours = activeSwaps.reduce((sum, s) => sum + s.hours, 0);
     const learner = await User.findById(swap.learner);
     
-    console.log(`[START_SWAP] id=${req.params.id} activeHours=${activeHours} swap.hours=${swap.hours} learner.credits=${learner ? learner.credits : 'null'}`);
-
     if (learner.credits < activeHours + swap.hours) {
       return res.status(400).json({ message: 'Learner has insufficient credits to start this session' });
     }
