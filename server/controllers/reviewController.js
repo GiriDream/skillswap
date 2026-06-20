@@ -11,12 +11,18 @@ exports.createReview = async (req, res) => {
       return res.status(404).json({ message: 'Swap not found' });
     }
 
+    const isLearner = swap.learner.toString() === req.user.id;
+    const isTutor = swap.tutor.toString() === req.user.id;
+
     if (swap.status !== 'Completed') {
-      return res.status(400).json({ message: 'Cannot review a swap that is not completed' });
+      const reviewerConfirmed = isLearner ? swap.learnerConfirmed : (isTutor ? swap.tutorConfirmed : false);
+      if (!reviewerConfirmed) {
+        return res.status(400).json({ message: 'Cannot review a swap that is not completed or confirmed by you' });
+      }
     }
 
-    const isLearnerReviewingTutor = swap.learner.toString() === req.user.id && swap.tutor.toString() === revieweeId;
-    const isTutorReviewingLearner = swap.tutor.toString() === req.user.id && swap.learner.toString() === revieweeId;
+    const isLearnerReviewingTutor = isLearner && swap.tutor.toString() === revieweeId;
+    const isTutorReviewingLearner = isTutor && swap.learner.toString() === revieweeId;
 
     if (!isLearnerReviewingTutor && !isTutorReviewingLearner) {
       return res.status(400).json({ message: 'Invalid reviewer/reviewee relationship for this swap' });

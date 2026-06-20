@@ -6,10 +6,20 @@ function CompletionModal({ swap, targetId, onClose, onConfirmed }) {
   const [comment, setComment] = useState('');
 
   const handleConfirm = async () => {
-    const { data } = await api.put(`/swap/${swap._id}/confirm`);
-    await api.post('/review', { swapId: swap._id, revieweeId: targetId, rating, comment });
-    onConfirmed(data);
-    onClose();
+    try {
+      const { data } = await api.put(`/swap/${swap._id}/confirm`);
+      try {
+        await api.post('/review', { swapId: swap._id, revieweeId: targetId, rating, comment });
+      } catch (reviewErr) {
+        console.error('Failed to submit review:', reviewErr);
+        // Do not block completion if only review fails
+      }
+      onConfirmed(data);
+      onClose();
+    } catch (err) {
+      console.error('Failed to confirm completion:', err);
+      alert(err.response?.data?.message || 'Failed to confirm completion. Please try again.');
+    }
   };
 
   return (

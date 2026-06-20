@@ -39,10 +39,10 @@ function Dashboard() {
     }
   }, [coords]);
 
-  const fetchMatches = () => {
+  const fetchMatches = (query = skillQuery) => {
     if (!locationSaved) return;
     setLoading(true);
-    const skillParam = skillQuery.trim() ? `&skill=${encodeURIComponent(skillQuery.trim())}` : '';
+    const skillParam = query.trim() ? `&skill=${encodeURIComponent(query.trim())}` : '';
     api.get(`/match/nearby?radius=${radius}${skillParam}`)
       .then((res) => setMatches(res.data))
       .catch((err) => console.error(err))
@@ -115,7 +115,7 @@ function Dashboard() {
                 </button>
                 {skillQuery && (
                   <button
-                    onClick={() => { setSkillQuery(''); setTimeout(fetchMatches, 0); }}
+                    onClick={() => { setSkillQuery(''); fetchMatches(''); }}
                     className="text-slate/50 text-sm px-2"
                   >
                     Clear

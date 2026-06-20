@@ -12,6 +12,9 @@ const badgeThresholds = [
 exports.getStats = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     const taughtCount = await Swap.countDocuments({ tutor: req.user.id, status: 'Completed' });
     const learntCount = await Swap.countDocuments({ learner: req.user.id, status: 'Completed' });
     const nextBadge = badgeThresholds.find((b) => user.totalTeachingHours < b.hours);

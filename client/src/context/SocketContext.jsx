@@ -12,7 +12,8 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (!user) return;
 
-    const newSocket = io('https://skillswap-backend-8cmi.onrender.com');
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (import.meta.env.PROD ? 'https://skillswap-backend-8cmi.onrender.com' : 'http://localhost:5000');
+    const newSocket = io(BACKEND_URL);
     setSocket(newSocket);
 
     // Re-announce on every connect (initial AND any reconnect) — keeps server's

@@ -70,6 +70,10 @@ exports.startSwap = async (req, res) => {
     const activeHours = activeSwaps.reduce((sum, s) => sum + s.hours, 0);
     const learner = await User.findById(swap.learner);
     
+    if (!learner) {
+      return res.status(404).json({ message: 'Learner not found' });
+    }
+    
     if (learner.credits < activeHours + swap.hours) {
       return res.status(400).json({ message: 'Learner has insufficient credits to start this session' });
     }
@@ -105,6 +109,10 @@ exports.confirmCompletion = async (req, res) => {
     if (swap.learnerConfirmed && swap.tutorConfirmed && swap.status !== 'Completed') {
       const learner = await User.findById(swap.learner).session(session);
       const tutor = await User.findById(swap.tutor).session(session);
+
+      if (!learner || !tutor) {
+        throw new Error('Learner or tutor not found');
+      }
 
       if (learner.credits < swap.hours) {
         throw new Error('Learner has insufficient credits');

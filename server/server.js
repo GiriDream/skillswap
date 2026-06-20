@@ -19,11 +19,28 @@ const initSocket = require('./sockets');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: 'https://monumental-yeot-3de97a.netlify.app' } });
+
+const allowedOrigins = [
+  'https://monumental-yeot-3de97a.netlify.app',
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+].filter(Boolean);
+
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true
+  }
+});
 
 connectDB();
 
-app.use(cors({ origin: 'https://monumental-yeot-3de97a.netlify.app' }));
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 app.use('/api/auth', require('./routes/authRoutes'));

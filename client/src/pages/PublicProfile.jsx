@@ -55,7 +55,7 @@ function PublicProfile() {
             {reviews.map((r) => (
               <div key={r._id} className="bg-white border border-slate/10 rounded-xl p-4">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="font-medium text-slate text-sm">{r.reviewer.name}</span>
+                  <span className="font-medium text-slate text-sm">{r.reviewer?.name || 'Anonymous'}</span>
                   <span className="text-marigold text-sm">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
                 </div>
                 {r.comment && <p className="text-sm text-slate/60">{r.comment}</p>}

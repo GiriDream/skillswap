@@ -11,6 +11,10 @@ exports.updateLocation = async (req, res) => {
       { new: true }
     );
 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     res.json({ message: 'Location updated', location: user.location });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -22,6 +26,10 @@ exports.getNearbyMatches = async (req, res) => {
   try {
     const { radius = 10, skill } = req.query;
     const currentUser = await User.findById(req.user.id);
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     if (!currentUser.location || !currentUser.location.coordinates) {
       return res.status(400).json({ message: 'Set your location first' });

@@ -78,6 +78,11 @@ const initSocket = (io) => {
       io.to(room).emit('swapStatusUpdated', swap);
     });
 
+    socket.on('callReady', ({ targetId }) => {
+      const targetSocketId = onlineUsers.get(targetId);
+      if (targetSocketId) io.to(targetSocketId).emit('callReady', { callerId: socket.userId });
+    });
+
     socket.on('callUser', ({ targetId, offer, callerId }) => {
       const targetSocketId = onlineUsers.get(targetId);
       if (targetSocketId) io.to(targetSocketId).emit('incomingCall', { offer, callerId });
@@ -91,6 +96,11 @@ const initSocket = (io) => {
     socket.on('iceCandidate', ({ targetId, candidate }) => {
       const targetSocketId = onlineUsers.get(targetId);
       if (targetSocketId) io.to(targetSocketId).emit('iceCandidate', { candidate });
+    });
+
+    socket.on('endCall', ({ targetId }) => {
+      const targetSocketId = onlineUsers.get(targetId);
+      if (targetSocketId) io.to(targetSocketId).emit('endCall');
     });
 
     socket.on('notepadChange', ({ room, content }) => {

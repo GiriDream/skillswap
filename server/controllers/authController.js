@@ -19,6 +19,16 @@ const buildUserResponse = (user, token) => ({
   token
 });
 
+const parseSkills = (skills) => {
+  if (typeof skills === 'string') {
+    return skills.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  if (Array.isArray(skills)) {
+    return skills.map((s) => String(s).trim()).filter(Boolean);
+  }
+  return [];
+};
+
 // @route POST /api/auth/register
 exports.register = async (req, res) => {
   try {
@@ -35,8 +45,8 @@ exports.register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      skillsToTeach,
-      skillsToLearn
+      skillsToTeach: parseSkills(skillsToTeach),
+      skillsToLearn: parseSkills(skillsToLearn)
     });
 
     res.status(201).json(buildUserResponse(user, generateToken(user._id)));
