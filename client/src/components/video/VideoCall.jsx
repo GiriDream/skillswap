@@ -29,83 +29,196 @@ function VideoCall({ targetId, onClose }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnection = useRef(null);
+  
+  // Ref tracking to resolve WebRTC race conditions
+  const isLocalReady = useRef(false);
   const pendingCandidates = useRef([]);
+  const pendingOffer = useRef(null);
+  const localStream = useRef(null);
+  
   const [connecting, setConnecting] = useState(true);
 
   const isCaller = user._id < targetId;
 
+  const makeOffer = async () => {
+    if (!peerConnection.current) return;
+    try {
+      const offer = await peerConnection.current.createOffer();
+      await peerConnection.current.setLocalDescription(offer);
+      socket.emit('callUser', { targetId, offer, callerId: user._id });
+    } catch (err) {
+      console.error('Error creating offer:', err);
+    }
+  };
+
+  const handleIncomingCall = async (offer, callerId) => {
+    if (callerId !== targetId) return;
+    
+    // If local stream & pc are not ready yet, store it in ref to process later
+    if (!isLocalReady.current || !peerConnection.current) {
+      pendingOffer.current = offer;
+      return;
+    }
+    
+    try {
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+      
+      // Process any candidates queued before the remote description was set
+      pendingCandidates.current.forEach((c) => {
+        peerConnection.current.addIceCandidate(c).catch((err) => {
+          console.error("Error adding queued ice candidate:", err);
+        });
+      });
+      pendingCandidates.current = [];
+      
+      const answer = await peerConnection.current.createAnswer();
+      await peerConnection.current.setLocalDescription(answer);
+      socket.emit('answerCall', { targetId: callerId, answer });
+    } catch (err) {
+      console.error('Error handling incoming call:', err);
+    }
+  };
+
   useEffect(() => {
-    let stream;
+    if (!socket) return;
     let isMounted = true;
-
-    const init = async () => {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (!isMounted) return;
-      localVideoRef.current.srcObject = stream;
-
+    
+    // 1. Initialize RTCPeerConnection synchronously on mount to receive candidates immediately
+    try {
       peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
-      stream.getTracks().forEach((track) => peerConnection.current.addTrack(track, stream));
-
+      
       peerConnection.current.ontrack = (event) => {
-        remoteVideoRef.current.srcObject = event.streams[0];
-        setConnecting(false);
-      };
-
-      peerConnection.current.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('iceCandidate', { targetId, candidate: event.candidate });
+        if (!isMounted) return;
+        if (remoteVideoRef.current && event.streams[0]) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+          setConnecting(false);
         }
       };
 
-      socket.on('incomingCall', async ({ offer, callerId }) => {
-        if (callerId !== targetId || !peerConnection.current) return;
-        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-        pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
-        pendingCandidates.current = [];
-        const answer = await peerConnection.current.createAnswer();
-        await peerConnection.current.setLocalDescription(answer);
-        socket.emit('answerCall', { targetId: callerId, answer });
-      });
+      peerConnection.current.onicecandidate = (event) => {
+        if (event.candidate && socket) {
+          socket.emit('iceCandidate', { targetId, candidate: event.candidate });
+        }
+      };
+    } catch (err) {
+      console.error('Failed to create RTCPeerConnection:', err);
+    }
 
-      socket.on('callAnswered', async ({ answer }) => {
-        if (!peerConnection.current) return;
+    // 2. Set up socket event listeners synchronously
+    socket.on('callReady', ({ callerId }) => {
+      if (callerId !== targetId) return;
+      if (isCaller && isLocalReady.current) {
+        makeOffer();
+      }
+    });
+
+    socket.on('incomingCall', async ({ offer, callerId }) => {
+      await handleIncomingCall(offer, callerId);
+    });
+
+    socket.on('callAnswered', async ({ answer }) => {
+      if (!peerConnection.current) return;
+      try {
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-        pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
+        
+        pendingCandidates.current.forEach((c) => {
+          peerConnection.current.addIceCandidate(c).catch((err) => {
+            console.error("Error adding queued ice candidate:", err);
+          });
+        });
         pendingCandidates.current = [];
-      });
+      } catch (err) {
+        console.error('Error handling callAnswered:', err);
+      }
+    });
 
-      socket.on('iceCandidate', async ({ candidate }) => {
-        if (!peerConnection.current) return;
+    socket.on('iceCandidate', async ({ candidate }) => {
+      if (!peerConnection.current) return;
+      try {
         const iceCandidate = new RTCIceCandidate(candidate);
         if (peerConnection.current.remoteDescription) {
           await peerConnection.current.addIceCandidate(iceCandidate);
         } else {
           pendingCandidates.current.push(iceCandidate);
         }
-      });
+      } catch (err) {
+        console.error('Error adding ice candidate:', err);
+      }
+    });
 
-      if (isCaller) {
-        const offer = await peerConnection.current.createOffer();
-        await peerConnection.current.setLocalDescription(offer);
-        socket.emit('callUser', { targetId, offer, callerId: user._id });
+    // 3. Request user media asynchronously and add tracks
+    const initMedia = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        
+        if (!isMounted) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        
+        localStream.current = stream;
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+
+        if (peerConnection.current) {
+          stream.getTracks().forEach((track) => {
+            peerConnection.current.addTrack(track, stream);
+          });
+        }
+
+        isLocalReady.current = true;
+
+        // Notify the remote peer that we are ready for the call
+        socket.emit('callReady', { targetId });
+
+        // If an offer arrived before our media was ready, handle it now
+        if (pendingOffer.current) {
+          await handleIncomingCall(pendingOffer.current, targetId);
+          pendingOffer.current = null;
+        } else if (isCaller) {
+          // If we are the caller and no offer is pending, send the initial offer
+          await makeOffer();
+        }
+
+      } catch (err) {
+        console.error('Error accessing media devices:', err);
+        if (isMounted) {
+          alert('Could not access camera or microphone. Please make sure permissions are granted.');
+          onClose();
+        }
       }
     };
 
-    init();
+    initMedia();
 
     return () => {
       isMounted = false;
-      stream?.getTracks().forEach((t) => t.stop());
-      peerConnection.current?.close();
-      peerConnection.current = null;
+      
+      // Clean up socket listeners
+      socket.off('callReady');
       socket.off('incomingCall');
       socket.off('callAnswered');
       socket.off('iceCandidate');
+
+      // Stop all tracks of local stream to prevent camera resource leak
+      if (localStream.current) {
+        localStream.current.getTracks().forEach((track) => track.stop());
+      }
+      
+      // Close peer connection
+      if (peerConnection.current) {
+        peerConnection.current.close();
+        peerConnection.current = null;
+      }
     };
-  }, []);
+  }, [socket, targetId]);
 
   const handleEndCall = () => {
-    peerConnection.current?.close();
+    if (peerConnection.current) {
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
     onClose();
   };
 
