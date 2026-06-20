@@ -22,7 +22,7 @@ app.use('/api', require('./routes/swapRoutes'));
 app.use('/api', require('./routes/reviewRoutes'));
 app.use('/api', require('./routes/userRoutes'));
 
-app.get('/', (req, res) => res.send('SkillSwap API running'));
+app.get('/', (req, res) => res.send('SkillSwap API running (Commit: 826d817)'));
 
 initSocket(io);
 
