@@ -23,6 +23,14 @@ app.use('/api', require('./routes/reviewRoutes'));
 app.use('/api', require('./routes/userRoutes'));
 
 app.get('/', (req, res) => res.send('SkillSwap API running (Commit: 826d817)'));
+app.get('/debug-db', (req, res) => {
+  const redactedUri = process.env.MONGO_URI ? process.env.MONGO_URI.replace(/:([^@]+)@/, ':****@') : 'NOT_SET';
+  res.json({
+    mongoUri: redactedUri,
+    connectionHost: mongoose.connection.host,
+    dbName: mongoose.connection.db ? mongoose.connection.db.databaseName : 'N/A'
+  });
+});
 
 initSocket(io);
 
