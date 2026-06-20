@@ -1,4 +1,15 @@
 require('dotenv').config();
+
+// Process-level incident monitors for alerting
+process.on('uncaughtException', (err) => {
+  console.error(`[CRITICAL_MONITOR] ${new Date().toISOString()} - Uncaught Exception: ${err.stack || err}`);
+  setTimeout(() => process.exit(1), 1000); // Give time for logs to flush before exiting
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(`[CRITICAL_MONITOR] ${new Date().toISOString()} - Unhandled Rejection at:`, promise, `reason:`, reason);
+});
+
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
@@ -23,6 +34,22 @@ app.use('/api', require('./routes/reviewRoutes'));
 app.use('/api', require('./routes/userRoutes'));
 
 app.get('/', (req, res) => res.send('SkillSwap API running'));
+
+// Centralized error handling middleware for incident alerting
+app.use((err, req, res, next) => {
+  console.error(`[ERROR_MONITOR] ${new Date().toISOString()} - ${req.method} ${req.url} - ${err.stack || err}`);
+
+  const errorResponse = {
+    message: err.message || 'Internal Server Error'
+  };
+
+  // Redact stack trace in production mode to prevent information disclosure
+  if (process.env.NODE_ENV !== 'production') {
+    errorResponse.stack = err.stack;
+  }
+
+  res.status(err.status || 500).json(errorResponse);
+});
 
 initSocket(io);
 
