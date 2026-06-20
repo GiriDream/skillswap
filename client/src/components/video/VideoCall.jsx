@@ -246,13 +246,16 @@ function VideoCall({ targetId, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">
-      <div className="relative w-full h-full">
-        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+    <div className="fixed inset-0 bg-slate flex flex-col items-center justify-center z-50 p-4 md:p-6">
+      <div className="relative w-full max-w-5xl h-full max-h-[85vh] bg-slate-light rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center border border-chalk/10">
+        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-contain" />
 
         {connecting && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-            <p className="text-chalk text-sm">Connecting...</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-slate/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-marigold border-t-transparent rounded-full animate-spin" />
+              <p className="text-chalk text-sm font-medium">Connecting to peer...</p>
+            </div>
           </div>
         )}
 
@@ -261,16 +264,18 @@ function VideoCall({ targetId, onClose }) {
           autoPlay
           playsInline
           muted
-          className="absolute bottom-20 right-3 w-24 h-32 md:bottom-4 md:right-4 md:w-40 md:h-28 rounded-lg border-2 border-white object-cover"
+          className="absolute bottom-4 right-4 w-28 h-36 md:w-48 md:h-36 rounded-xl border-2 border-marigold shadow-lg object-contain bg-slate"
         />
       </div>
 
-      <button
-        onClick={handleEndCall}
-        className="absolute bottom-6 bg-vermilion text-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-medium"
-      >
-        End Call
-      </button>
+      <div className="mt-4 md:mt-6 flex gap-4">
+        <button
+          onClick={handleEndCall}
+          className="bg-vermilion text-white px-8 py-3 rounded-full text-sm md:text-base font-semibold shadow-lg hover:opacity-90 active:scale-95 transition"
+        >
+          End Call
+        </button>
+      </div>
     </div>
   );
 }
