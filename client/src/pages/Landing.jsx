@@ -39,15 +39,15 @@ function Landing() {
   return (
     <div>
       {/* HERO */}
-      <section className="bg-slate text-chalk px-6 py-24 text-center relative overflow-hidden">
-        <SwapMark className="w-20 h-10 mx-auto mb-6" color="#E8A33D" />
-        <h1 className="font-display text-5xl md:text-6xl leading-tight max-w-3xl mx-auto">
+      <section className="bg-slate text-chalk px-4 py-16 md:px-6 md:py-24 text-center relative overflow-hidden">
+        <SwapMark className="w-16 h-8 md:w-20 md:h-10 mx-auto mb-6" color="#E8A33D" />
+        <h1 className="font-display text-3xl sm:text-4xl md:text-6xl leading-tight max-w-3xl mx-auto">
           Your skills are the <span className="text-marigold">only currency</span> here.
         </h1>
-        <p className="text-chalk/70 max-w-xl mx-auto mt-6 text-lg">
+        <p className="text-chalk/70 max-w-xl mx-auto mt-4 md:mt-6 text-base md:text-lg px-2">
           Teach what you know. Learn what you don't. No money changes hands — just hours, credits, and community.
         </p>
-        <div className="flex gap-4 justify-center mt-10">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-8 md:mt-10 px-4">
           <Link to="/register" className="bg-marigold text-slate px-7 py-3 rounded-full font-semibold hover:scale-105 transition">
             Start Swapping
           </Link>
@@ -69,27 +69,27 @@ function Landing() {
       </div>
 
       {/* STATS STRIP */}
-      <section className="bg-chalk px-6 py-12 border-b border-slate/10">
-        <div className="max-w-4xl mx-auto grid grid-cols-3 gap-6 text-center">
+      <section className="bg-chalk px-4 py-10 md:px-6 md:py-12 border-b border-slate/10">
+        <div className="max-w-4xl mx-auto grid grid-cols-3 gap-4 md:gap-6 text-center">
           <div>
-            <p className="font-mono text-3xl md:text-4xl text-marigold">1,200+</p>
-            <p className="text-xs md:text-sm text-slate/60 mt-1">Hours swapped</p>
+            <p className="font-mono text-2xl md:text-4xl text-marigold">1,200+</p>
+            <p className="text-[11px] md:text-sm text-slate/60 mt-1">Hours swapped</p>
           </div>
           <div>
-            <p className="font-mono text-3xl md:text-4xl text-leaf">40+</p>
-            <p className="text-xs md:text-sm text-slate/60 mt-1">Skills on the board</p>
+            <p className="font-mono text-2xl md:text-4xl text-leaf">40+</p>
+            <p className="text-[11px] md:text-sm text-slate/60 mt-1">Skills on the board</p>
           </div>
           <div>
-            <p className="font-mono text-3xl md:text-4xl text-vermilion">₹0</p>
-            <p className="text-xs md:text-sm text-slate/60 mt-1">Money exchanged, ever</p>
+            <p className="font-mono text-2xl md:text-4xl text-vermilion">₹0</p>
+            <p className="text-[11px] md:text-sm text-slate/60 mt-1">Money exchanged, ever</p>
           </div>
         </div>
       </section>
 
       {/* FEATURES */}
-      <section id="how" className="px-6 py-20 max-w-5xl mx-auto">
-        <h2 className="font-display text-3xl text-center mb-12 text-slate">How the swap works</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+      <section id="how" className="px-4 py-14 md:px-6 md:py-20 max-w-5xl mx-auto">
+        <h2 className="font-display text-2xl md:text-3xl text-center mb-10 md:mb-12 text-slate">How the swap works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FeatureCard
             title="Find nearby tutors"
             desc="Geo-matching finds people in your city who teach what you want to learn."
@@ -123,15 +123,15 @@ function Landing() {
       </section>
 
       {/* POPULAR SKILLS - tag cloud */}
-      <section className="bg-slate-light/10 px-6 py-20">
+      <section className="bg-slate-light/10 px-4 py-14 md:px-6 md:py-20">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-display text-3xl text-slate mb-3">What's on the board today</h2>
-          <p className="text-slate/60 mb-8">A small sample of skills being taught right now.</p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <h2 className="font-display text-2xl md:text-3xl text-slate mb-3">What's on the board today</h2>
+          <p className="text-slate/60 mb-8 text-sm md:text-base">A small sample of skills being taught right now.</p>
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3">
             {popularSkills.map((skill, i) => (
               <span
                 key={skill}
-                className={`px-4 py-2 rounded-full text-sm font-medium border ${
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium border ${
                   i % 3 === 0
                     ? 'bg-marigold/15 text-marigold border-marigold/30'
                     : i % 3 === 1
@@ -147,9 +147,9 @@ function Landing() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="px-6 py-20 max-w-4xl mx-auto">
-        <h2 className="font-display text-3xl text-center mb-12 text-slate">From the community</h2>
-        <div className="grid md:grid-cols-2 gap-6">
+      <section className="px-4 py-14 md:px-6 md:py-20 max-w-4xl mx-auto">
+        <h2 className="font-display text-2xl md:text-3xl text-center mb-10 md:mb-12 text-slate">From the community</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {testimonials.map((t, i) => (
             <div key={i} className="bg-white border-2 border-slate/10 rounded-xl p-6">
               <p className="text-slate/80 text-sm leading-relaxed mb-4">"{t.quote}"</p>
@@ -161,22 +161,22 @@ function Landing() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="bg-slate text-chalk px-6 py-20 text-center">
-        <SwapMark className="w-16 h-8 mx-auto mb-5" color="#E8A33D" />
-        <h2 className="font-display text-4xl mb-4">Ready to swap your first skill?</h2>
-        <p className="text-chalk/70 mb-8">Sign up free — you start with 5 credits, no card required.</p>
-        <Link to="/register" className="bg-marigold text-slate px-8 py-3.5 rounded-full font-semibold hover:scale-105 transition inline-block">
+      <section className="bg-slate text-chalk px-4 py-14 md:px-6 md:py-20 text-center">
+        <SwapMark className="w-14 h-7 md:w-16 md:h-8 mx-auto mb-5" color="#E8A33D" />
+        <h2 className="font-display text-2xl md:text-4xl mb-4 px-2">Ready to swap your first skill?</h2>
+        <p className="text-chalk/70 mb-8 text-sm md:text-base">Sign up free — you start with 5 credits, no card required.</p>
+        <Link to="/register" className="bg-marigold text-slate px-7 py-3 md:px-8 md:py-3.5 rounded-full font-semibold hover:scale-105 transition inline-block">
           Create Free Account
         </Link>
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-light text-chalk/60 px-6 py-8 text-center text-sm">
+      <footer className="bg-slate-light text-chalk/60 px-4 py-8 md:px-6 text-center text-sm">
         <div className="flex items-center justify-center gap-2 mb-2">
           <SwapMark className="w-6 h-3" color="#F2EFE6" />
           <span className="font-display text-chalk">SkillSwap</span>
         </div>
-        <p>A money-less skill barter community. Built for neighbors who want to teach and learn.</p>
+        <p className="text-xs md:text-sm">A money-less skill barter community. Built for neighbors who want to teach and learn.</p>
         <p className="mt-2 text-xs">© 2026 SkillSwap. All swaps, no spending.</p>
       </footer>
     </div>

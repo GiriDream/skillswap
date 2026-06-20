@@ -3,7 +3,7 @@ import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
 
 const ICE_SERVERS = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] // free public STUN server
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
 };
 
 function VideoCall({ targetId, onClose }) {
@@ -12,11 +12,18 @@ function VideoCall({ targetId, onClose }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnection = useRef(null);
-  const [callStarted, setCallStarted] = useState(false);
+  const pendingCandidates = useRef([]);
+  const [connecting, setConnecting] = useState(true);
+
+  // Deterministic role: smaller userId always calls, larger always waits to answer.
+  // This stops BOTH sides from sending an offer at the same time.
+  const isCaller = user._id < targetId;
 
   useEffect(() => {
-    const init = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    let stream;
+
+    const setupConnection = async () => {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideoRef.current.srcObject = stream;
 
       peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
@@ -24,6 +31,7 @@ function VideoCall({ targetId, onClose }) {
 
       peerConnection.current.ontrack = (event) => {
         remoteVideoRef.current.srcObject = event.streams[0];
+        setConnecting(false);
       };
 
       peerConnection.current.onicecandidate = (event) => {
@@ -32,29 +40,49 @@ function VideoCall({ targetId, onClose }) {
         }
       };
 
-      // Caller: create + send offer
-      const offer = await peerConnection.current.createOffer();
-      await peerConnection.current.setLocalDescription(offer);
-      socket.emit('callUser', { targetId, offer, callerId: user._id });
+      if (isCaller) {
+        const offer = await peerConnection.current.createOffer();
+        await peerConnection.current.setLocalDescription(offer);
+        socket.emit('callUser', { targetId, offer, callerId: user._id });
+      }
     };
 
-    init();
+    setupConnection();
 
+    // Receiver side: got an offer, create + send answer
+    socket.on('incomingCall', async ({ offer, callerId }) => {
+      if (callerId !== targetId) return; // ignore unrelated calls
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+
+      // Flush any ICE candidates that arrived before remote description was set
+      pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
+      pendingCandidates.current = [];
+
+      const answer = await peerConnection.current.createAnswer();
+      await peerConnection.current.setLocalDescription(answer);
+      socket.emit('answerCall', { targetId: callerId, answer });
+    });
+
+    // Caller side: got the answer back
     socket.on('callAnswered', async ({ answer }) => {
       await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-      setCallStarted(true);
+      pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
+      pendingCandidates.current = [];
     });
 
     socket.on('iceCandidate', async ({ candidate }) => {
-      try {
-        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (err) {
-        console.error('ICE candidate error:', err);
+      const iceCandidate = new RTCIceCandidate(candidate);
+      if (peerConnection.current.remoteDescription) {
+        await peerConnection.current.addIceCandidate(iceCandidate);
+      } else {
+        pendingCandidates.current.push(iceCandidate); // queue until remote description is ready
       }
     });
 
     return () => {
+      stream?.getTracks().forEach((t) => t.stop());
       peerConnection.current?.close();
+      socket.off('incomingCall');
       socket.off('callAnswered');
       socket.off('iceCandidate');
     };
@@ -69,9 +97,26 @@ function VideoCall({ targetId, onClose }) {
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">
       <div className="relative w-full h-full">
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-        <video ref={localVideoRef} autoPlay playsInline muted className="absolute bottom-4 right-4 w-40 h-28 rounded-lg border-2 border-white object-cover" />
+
+        {connecting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <p className="text-chalk text-sm">Connecting...</p>
+          </div>
+        )}
+
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute bottom-20 right-3 w-24 h-32 md:bottom-4 md:right-4 md:w-40 md:h-28 rounded-lg border-2 border-white object-cover"
+        />
       </div>
-      <button onClick={handleEndCall} className="absolute bottom-6 bg-red-600 text-white px-6 py-3 rounded-full">
+
+      <button
+        onClick={handleEndCall}
+        className="absolute bottom-6 bg-vermilion text-white px-6 py-3 md:px-8 md:py-3.5 rounded-full text-sm md:text-base font-medium"
+      >
         End Call
       </button>
     </div>

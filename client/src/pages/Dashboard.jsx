@@ -56,11 +56,11 @@ function Dashboard() {
   return (
     <div className="min-h-[calc(100vh-72px)] bg-chalk">
       {/* Welcome banner */}
-      <div className="bg-slate text-chalk px-6 py-8">
+      <div className="bg-slate text-chalk px-4 py-6 md:px-6 md:py-8">
         <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <div
-              className="w-14 h-14 rounded-full flex items-center justify-center font-display text-2xl text-white overflow-hidden"
+              className="w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center font-display text-xl md:text-2xl text-white overflow-hidden flex-shrink-0"
               style={{ backgroundColor: colorFor(user?.name || 'S') }}
             >
               {user?.profileImage ? (
@@ -70,18 +70,18 @@ function Dashboard() {
               )}
             </div>
             <div>
-              <h1 className="font-display text-3xl">Hey {user?.name} 👋</h1>
-              <p className="text-chalk/60 text-sm">Here's who's nearby and ready to swap skills.</p>
+              <h1 className="font-display text-xl md:text-3xl leading-tight">Hey {user?.name} 👋</h1>
+              <p className="text-chalk/60 text-xs md:text-sm">Here's who's nearby and ready to swap skills.</p>
             </div>
           </div>
-          <div className="bg-slate-light px-4 py-2 rounded-xl text-center">
-            <p className="text-xs text-chalk/50">Your credits</p>
-            <p className="font-mono text-xl text-marigold">{user?.credits ?? 0}</p>
+          <div className="bg-slate-light px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-center">
+            <p className="text-[10px] md:text-xs text-chalk/50">Your credits</p>
+            <p className="font-mono text-lg md:text-xl text-marigold">{user?.credits ?? 0}</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8">
         {geoError && (
           <p className="bg-vermilion/10 text-vermilion px-4 py-3 rounded-lg mb-4 text-sm">
             Location error: {geoError}. Please allow location access in your browser.
@@ -98,32 +98,34 @@ function Dashboard() {
         {locationSaved && (
           <>
             {/* Search bar */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <input
                 value={skillQuery}
                 onChange={(e) => setSkillQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && fetchMatches()}
-                placeholder="Search a specific skill (e.g. React, Cooking, Tamil)"
+                placeholder="Search a skill (e.g. React, Cooking)"
                 className="flex-1 border border-slate/20 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-marigold"
               />
-              <button
-                onClick={fetchMatches}
-                className="bg-slate text-chalk px-5 py-2 rounded-full text-sm hover:bg-slate-light transition"
-              >
-                Search
-              </button>
-              {skillQuery && (
+              <div className="flex gap-2">
                 <button
-                  onClick={() => { setSkillQuery(''); setTimeout(fetchMatches, 0); }}
-                  className="text-slate/50 text-sm px-2"
+                  onClick={fetchMatches}
+                  className="flex-1 sm:flex-none bg-slate text-chalk px-5 py-2 rounded-full text-sm hover:bg-slate-light transition"
                 >
-                  Clear
+                  Search
                 </button>
-              )}
+                {skillQuery && (
+                  <button
+                    onClick={() => { setSkillQuery(''); setTimeout(fetchMatches, 0); }}
+                    className="text-slate/50 text-sm px-2"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Controls bar */}
-            <div className="bg-white border border-slate/10 rounded-xl p-5 mb-6 flex flex-col md:flex-row md:items-center gap-5">
+            <div className="bg-white border border-slate/10 rounded-xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-5">
               <div className="flex-1">
                 <label className="flex justify-between text-sm font-medium text-slate mb-2">
                   <span>Search radius</span>
@@ -157,28 +159,28 @@ function Dashboard() {
 
             {/* Results */}
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <SkeletonCard /><SkeletonCard /><SkeletonCard />
               </div>
             ) : matches.length === 0 ? (
-              <div className="text-center py-16 bg-white border border-dashed border-slate/20 rounded-xl">
+              <div className="text-center py-12 md:py-16 bg-white border border-dashed border-slate/20 rounded-xl px-4">
                 <SwapMark className="w-14 h-7 mx-auto mb-3" color="#20292B30" />
                 <p className="text-slate font-display text-lg">Nothing on the board nearby</p>
                 <p className="text-slate/50 text-sm mt-1">Try widening your search radius or clearing the skill filter.</p>
               </div>
             ) : view === 'list' ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {matches.map((m) => (
                   <div
                     key={m._id}
-                    className="bg-white border border-slate/10 rounded-xl p-5 hover:border-marigold hover:shadow-md transition"
+                    className="bg-white border border-slate/10 rounded-xl p-4 md:p-5 hover:border-marigold hover:shadow-md transition"
                   >
                     <div
                       onClick={() => navigate(`/user/${m._id}`)}
                       className="flex items-center gap-3 mb-3 cursor-pointer"
                     >
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center font-display text-white overflow-hidden"
+                        className="w-10 h-10 rounded-full flex items-center justify-center font-display text-white overflow-hidden flex-shrink-0"
                         style={{ backgroundColor: colorFor(m.name) }}
                       >
                         {m.profileImage ? (
@@ -187,8 +189,8 @@ function Dashboard() {
                           m.name.charAt(0)
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-display text-lg text-slate leading-tight hover:text-marigold transition">{m.name}</h3>
+                      <div className="min-w-0">
+                        <h3 className="font-display text-lg text-slate leading-tight hover:text-marigold transition truncate">{m.name}</h3>
                         <p className="text-xs font-mono text-leaf">{m.credits} credits</p>
                       </div>
                     </div>
