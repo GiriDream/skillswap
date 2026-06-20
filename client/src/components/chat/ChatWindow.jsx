@@ -11,7 +11,7 @@ import CompletionModal from '../booking/CompletionModal';
 function ChatWindow() {
   const { targetId } = useParams();
   const { user } = useAuth();
-  const { socket, onlineUsers } = useSocket();
+  const { socket } = useSocket();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -19,8 +19,10 @@ function ChatWindow() {
   const [activeSwap, setActiveSwap] = useState(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [isTargetOnline, setIsTargetOnline] = useState(false);
   const bottomRef = useRef(null);
 
+  // Messages, swap, AI audit, typing listeners
   useEffect(() => {
     if (!socket) return;
 
@@ -53,13 +55,29 @@ function ChatWindow() {
     };
   }, [socket, targetId]);
 
+  // Direct online status check (self-healing, doesn't rely only on broadcast)
+  useEffect(() => {
+    if (!socket) return;
+
+    const check = () => {
+      socket.emit('checkOnline', targetId, (isOnline) => {
+        setIsTargetOnline(isOnline);
+      });
+    };
+
+    check();
+    const interval = setInterval(check, 5000);
+
+    return () => clearInterval(interval);
+  }, [socket, targetId]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = () => {
     if (!text.trim()) return;
-    socket.emit('sendMessage', { senderId: user._id, receiverId: targetId, text });
+    socket.emit('sendMessage', { senderId: user._id, receiverId: targetId, text, senderName: user.name });
     socket.emit('stopTyping', { senderId: user._id, receiverId: targetId });
     setText('');
   };
@@ -72,19 +90,19 @@ function ChatWindow() {
   const handleRequestSwap = async () => {
     const { data } = await api.post('/swap', { tutorId: targetId, skill: 'React', hours: 1 });
     setActiveSwap(data);
-    socket.emit('swapRequestSent', { tutorId: targetId, learnerId: user._id, swap: data });
+    socket.emit('swapRequestSent', { tutorId: targetId, learnerId: user._id, swap: data, learnerName: user.name });
   };
 
   return (
     <div className="flex flex-col h-[calc(100vh-72px)] bg-chalk">
       {/* Header */}
-      <div className="bg-slate text-chalk p-4 flex items-center gap-3">
-        <h2 className="font-display text-xl">Chat</h2>
-        <span className={`w-2 h-2 rounded-full ${onlineUsers.includes(targetId) ? 'bg-leaf' : 'bg-chalk/30'}`} />
-        <span className="text-xs text-chalk/60">
-          {onlineUsers.includes(targetId) ? 'Online' : 'Offline'}
+      <div className="bg-slate text-chalk p-3 md:p-4 flex items-center gap-2 md:gap-3 flex-wrap">
+        <h2 className="font-display text-lg md:text-xl">Chat</h2>
+        <span className={`w-2 h-2 rounded-full ${isTargetOnline ? 'bg-leaf' : 'bg-chalk/30'}`} />
+        <span className="text-xs text-chalk/60 hidden sm:inline">
+          {isTargetOnline ? 'Online' : 'Offline'}
         </span>
-        <button onClick={handleRequestSwap} className="ml-auto bg-marigold text-slate text-xs font-medium px-3 py-1.5 rounded-full hover:opacity-90 transition">
+        <button onClick={handleRequestSwap} className="ml-auto bg-marigold text-slate text-xs font-medium px-3 py-1.5 rounded-full hover:opacity-90 transition whitespace-nowrap">
           Request Swap
         </button>
       </div>

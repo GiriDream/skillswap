@@ -13,6 +13,10 @@ const initSocket = (io) => {
       io.emit('onlineUsers', Array.from(onlineUsers.keys()));
     });
 
+    socket.on('checkOnline', (userId, callback) => {
+      callback(onlineUsers.has(userId));
+    });
+
     socket.on('joinRoom', ({ userId, targetId }) => {
       const room = [userId, targetId].sort().join('_');
       socket.join(room);
@@ -33,7 +37,6 @@ const initSocket = (io) => {
         });
       }
 
-      // Direct notification to receiver (works even if they're not in the chat room)
       const receiverSocketId = onlineUsers.get(receiverId);
       if (receiverSocketId) {
         io.to(receiverSocketId).emit('newNotification', {
@@ -88,16 +91,6 @@ const initSocket = (io) => {
     socket.on('iceCandidate', ({ targetId, candidate }) => {
       const targetSocketId = onlineUsers.get(targetId);
       if (targetSocketId) io.to(targetSocketId).emit('iceCandidate', { candidate });
-    });
-
-    socket.on('endCall', ({ targetId }) => {
-      const targetSocketId = onlineUsers.get(targetId);
-      if (targetSocketId) io.to(targetSocketId).emit('endCall');
-    });
-
-    socket.on('callReady', ({ targetId }) => {
-      const targetSocketId = onlineUsers.get(targetId);
-      if (targetSocketId) io.to(targetSocketId).emit('callReady', { callerId: socket.userId });
     });
 
     socket.on('notepadChange', ({ room, content }) => {
