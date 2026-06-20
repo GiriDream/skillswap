@@ -90,6 +90,11 @@ const initSocket = (io) => {
       if (targetSocketId) io.to(targetSocketId).emit('iceCandidate', { candidate });
     });
 
+    socket.on('endCall', ({ targetId }) => {
+      const targetSocketId = onlineUsers.get(targetId);
+      if (targetSocketId) io.to(targetSocketId).emit('endCall');
+    });
+
     socket.on('callReady', ({ targetId }) => {
       const targetSocketId = onlineUsers.get(targetId);
       if (targetSocketId) io.to(targetSocketId).emit('callReady', { callerId: socket.userId });

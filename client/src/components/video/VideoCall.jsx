@@ -100,6 +100,14 @@ function VideoCall({ targetId, onClose }) {
           socket.emit('iceCandidate', { targetId, candidate: event.candidate });
         }
       };
+
+      peerConnection.current.onconnectionstatechange = () => {
+        if (!isMounted || !peerConnection.current) return;
+        const state = peerConnection.current.connectionState;
+        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+          onClose();
+        }
+      };
     } catch (err) {
       console.error('Failed to create RTCPeerConnection:', err);
     }
@@ -143,6 +151,16 @@ function VideoCall({ targetId, onClose }) {
         }
       } catch (err) {
         console.error('Error adding ice candidate:', err);
+      }
+    });
+
+    socket.on('endCall', () => {
+      if (isMounted) onClose();
+    });
+
+    socket.on('onlineUsers', (users) => {
+      if (isMounted && !users.includes(targetId)) {
+        onClose();
       }
     });
 
@@ -200,6 +218,11 @@ function VideoCall({ targetId, onClose }) {
       socket.off('incomingCall');
       socket.off('callAnswered');
       socket.off('iceCandidate');
+      socket.off('endCall');
+      socket.off('onlineUsers');
+
+      // Send endCall signal to target peer
+      socket.emit('endCall', { targetId });
 
       // Stop all tracks of local stream to prevent camera resource leak
       if (localStream.current) {
