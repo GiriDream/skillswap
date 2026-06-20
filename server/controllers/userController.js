@@ -36,11 +36,22 @@ exports.updateProfile = async (req, res) => {
   try {
     const { name, skillsToTeach, skillsToLearn } = req.body;
 
-    const updateData = {
-      name,
-      skillsToTeach: skillsToTeach.split(',').map((s) => s.trim()),
-      skillsToLearn: skillsToLearn.split(',').map((s) => s.trim())
+    const parseSkills = (skills) => {
+      if (typeof skills === 'string') {
+        return skills.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      if (Array.isArray(skills)) {
+        return skills.map((s) => String(s).trim()).filter(Boolean);
+      }
+      return [];
     };
+
+    const updateData = {
+      name
+    };
+
+    if (skillsToTeach !== undefined) updateData.skillsToTeach = parseSkills(skillsToTeach);
+    if (skillsToLearn !== undefined) updateData.skillsToLearn = parseSkills(skillsToLearn);
 
     if (req.file) updateData.profileImage = req.file.path;
 

@@ -6,6 +6,7 @@ function Notepad({ room }) {
   const [content, setContent] = useState('');
 
   useEffect(() => {
+    if (!socket) return;
     socket.on('notepadUpdated', (newContent) => setContent(newContent));
     return () => socket.off('notepadUpdated');
   }, [socket]);
