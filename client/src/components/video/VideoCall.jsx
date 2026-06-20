@@ -15,15 +15,15 @@ function VideoCall({ targetId, onClose }) {
   const pendingCandidates = useRef([]);
   const [connecting, setConnecting] = useState(true);
 
-  // Deterministic role: smaller userId always calls, larger always waits to answer.
-  // This stops BOTH sides from sending an offer at the same time.
   const isCaller = user._id < targetId;
 
   useEffect(() => {
     let stream;
+    let isMounted = true;
 
-    const setupConnection = async () => {
+    const init = async () => {
       stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (!isMounted) return;
       localVideoRef.current.srcObject = stream;
 
       peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
@@ -40,6 +40,34 @@ function VideoCall({ targetId, onClose }) {
         }
       };
 
+      // Listeners registered ONLY after peerConnection is ready — fixes the null error
+      socket.on('incomingCall', async ({ offer, callerId }) => {
+        if (callerId !== targetId || !peerConnection.current) return;
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+        pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
+        pendingCandidates.current = [];
+        const answer = await peerConnection.current.createAnswer();
+        await peerConnection.current.setLocalDescription(answer);
+        socket.emit('answerCall', { targetId: callerId, answer });
+      });
+
+      socket.on('callAnswered', async ({ answer }) => {
+        if (!peerConnection.current) return;
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+        pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
+        pendingCandidates.current = [];
+      });
+
+      socket.on('iceCandidate', async ({ candidate }) => {
+        if (!peerConnection.current) return;
+        const iceCandidate = new RTCIceCandidate(candidate);
+        if (peerConnection.current.remoteDescription) {
+          await peerConnection.current.addIceCandidate(iceCandidate);
+        } else {
+          pendingCandidates.current.push(iceCandidate);
+        }
+      });
+
       if (isCaller) {
         const offer = await peerConnection.current.createOffer();
         await peerConnection.current.setLocalDescription(offer);
@@ -47,41 +75,13 @@ function VideoCall({ targetId, onClose }) {
       }
     };
 
-    setupConnection();
-
-    // Receiver side: got an offer, create + send answer
-    socket.on('incomingCall', async ({ offer, callerId }) => {
-      if (callerId !== targetId) return; // ignore unrelated calls
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-
-      // Flush any ICE candidates that arrived before remote description was set
-      pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
-      pendingCandidates.current = [];
-
-      const answer = await peerConnection.current.createAnswer();
-      await peerConnection.current.setLocalDescription(answer);
-      socket.emit('answerCall', { targetId: callerId, answer });
-    });
-
-    // Caller side: got the answer back
-    socket.on('callAnswered', async ({ answer }) => {
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-      pendingCandidates.current.forEach((c) => peerConnection.current.addIceCandidate(c));
-      pendingCandidates.current = [];
-    });
-
-    socket.on('iceCandidate', async ({ candidate }) => {
-      const iceCandidate = new RTCIceCandidate(candidate);
-      if (peerConnection.current.remoteDescription) {
-        await peerConnection.current.addIceCandidate(iceCandidate);
-      } else {
-        pendingCandidates.current.push(iceCandidate); // queue until remote description is ready
-      }
-    });
+    init();
 
     return () => {
+      isMounted = false;
       stream?.getTracks().forEach((t) => t.stop());
       peerConnection.current?.close();
+      peerConnection.current = null;
       socket.off('incomingCall');
       socket.off('callAnswered');
       socket.off('iceCandidate');
