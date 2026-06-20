@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+@theme {
+  --color-slate: #20292B;
+  --color-slate-light: #3A4648;
+  --color-chalk: #F2EFE6;
+  --color-marigold: #E8A33D;
+  --color-vermilion: #C84B31;
+  --color-leaf: #6B8F71;
+
+  --font-display: 'Kalam', cursive;
+  --font-body: 'Work Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-chalk);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
